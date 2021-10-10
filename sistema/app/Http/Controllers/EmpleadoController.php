@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleado;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage as FacadesStorage;
 
 class EmpleadoController extends Controller
 {
@@ -14,6 +15,8 @@ class EmpleadoController extends Controller
      */
     public function index()
     {
+        $datos['empleados']=Empleado::paginate(5);
+        return view('empleado.index',$datos);
         //
     }
 
@@ -24,6 +27,7 @@ class EmpleadoController extends Controller
      */
     public function create()
     {
+        return view('empleado.create');
         //
     }
 
@@ -36,6 +40,30 @@ class EmpleadoController extends Controller
     public function store(Request $request)
     {
         //
+
+        $campos = [
+            'Nombre' => 'required|string|max::100',
+            'ApellidoPaterno' => 'required|string|max::100',
+            'ApellidoMaterno' => 'required|string|max::100',
+            'Correo' => 'required|email',
+            'Foto' => 'required|max::10000|mimes:jpeg, png, jpg'
+        ];
+
+        $mensaje = [
+            'required' => 'El :attribute es requerido',
+            'Foto.required' => 'La foto es requerida' 
+        ];
+
+        $this -> validate($request, $campos, $mensaje);
+        //
+        $datosEmpleado = request()->except('_token');
+        if($request->hasFile('Foto'))
+        {
+            $datosEmpleado['Foto'] = $request -> file('Foto')->store('uploads', 'public');
+        }
+        Empleado::insert($datosEmpleado);
+        return redirect('empleado')->with('mensaje', 'Empleado agregado con éxito');
+        //return response()->json($datosEmpleado);
     }
 
     /**
@@ -55,8 +83,11 @@ class EmpleadoController extends Controller
      * @param  \App\Models\Empleado  $empleado
      * @return \Illuminate\Http\Response
      */
-    public function edit(Empleado $empleado)
+    public function edit($id)
     {
+        $empleado = Empleado::findOrFail($id);
+
+        return view('empleado.edit', compact('empleado'));
         //
     }
 
@@ -67,9 +98,41 @@ class EmpleadoController extends Controller
      * @param  \App\Models\Empleado  $empleado
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Empleado $empleado)
+    public function update(Request $request, $id)
     {
+        $campos = [
+            'Nombre' => 'required|string|max::100',
+            'ApellidoPaterno' => 'required|string|max::100',
+            'ApellidoMaterno' => 'required|string|max::100',
+            'Correo' => 'required|email',
+            
+        ];
+
+        $mensaje = [
+            'required' => 'El :attribute es requerido',
+            
+        ];
+        if($request->hasFile('Foto'))
+        {
+            $campos = ['Foto' => 'required|max::10000|mimes:jpeg, png, jpg'];
+            $mensaje = ['Foto.required' => 'La foto es requerida'];
+            $this -> validate($request, $campos, $mensaje);
+        }
+
+        $this -> validate($request, $campos, $mensaje);
         //
+        $datosEmpleado = request()->except('_token','_method');
+        if($request->hasFile('Foto'))
+        {
+            $empleado = Empleado::findOrFail($id);
+            FacadesStorage::delete('public/'.$empleado->Foto);
+            $datosEmpleado['Foto'] = $request -> file('Foto')->store('uploads', 'public');
+        }
+        Empleado::where('id','=',$id)->update($datosEmpleado);
+        $empleado = Empleado::findOrFail($id);
+        
+        //return view('empleados.edit', compact('empleado'));
+        return redirect('empleado')->with('mensaje','Empleado Modificado.');
     }
 
     /**
@@ -78,8 +141,16 @@ class EmpleadoController extends Controller
      * @param  \App\Models\Empleado  $empleado
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Empleado $empleado)
+    public function destroy($id)
     {
+
         //
+        $empleado = Empleado::findOrFail($id);
+        if(FacadesStorage::delete('public/'.$empleado->Foto))
+        {
+            Empleado::destroy($id);
+        }
+        //return redirect('empleado');
+        return redirect('empleado')->with('mensaje', 'Empleado eliminado con éxito');
     }
 }
