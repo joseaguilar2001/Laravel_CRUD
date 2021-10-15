@@ -2,7 +2,6 @@
 @section('content')
 <div class="container">
 
-
 @if(Session::has('mensaje'))
 <div class="alert alert-success alert-dismissible fade show" role="alert">
 {{Session::get('mensaje')}}
@@ -14,7 +13,7 @@
 <a href="{{url('empleado/create')}}" class="btn btn-success">Registrar nuevo empleado</a>
 <br>
 <br>
-<table class="table table-light">
+<table class="table table table-primary table-striped">
 
   <thead class="thead-light">
     <tr>
